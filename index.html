@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<meta name="theme-color" content="#ffffff">
+<title>Gym</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 17px;
+    color: #1c1c1e;
+    background: #fff;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap { max-width: 428px; margin: 0 auto; padding: 12px 16px 40px; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+  .tabs button {
+    flex: 1;
+    font: inherit;
+    font-weight: 600;
+    padding: 12px 0;
+    border: 1px solid #d1d1d6;
+    border-radius: 10px;
+    background: #fff;
+    color: #1c1c1e;
+  }
+  .tabs button.on { background: #4f2d7f; border-color: #4f2d7f; color: #fff; }
+
+  .variant { display: flex; gap: 8px; margin-bottom: 16px; }
+  .variant button {
+    flex: 1;
+    font: inherit;
+    padding: 9px 0;
+    border: 1px solid #d1d1d6;
+    border-radius: 10px;
+    background: #fff;
+    color: #1c1c1e;
+  }
+  .variant button.on { background: #efe9f7; border-color: #4f2d7f; color: #4f2d7f; font-weight: 600; }
+
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { border-bottom: 1px solid #e5e5ea; }
+  li:first-child { border-top: 1px solid #e5e5ea; }
+  label {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 56px;
+    padding: 8px 2px;
+  }
+  input[type="checkbox"] {
+    width: 24px; height: 24px;
+    flex: none;
+    accent-color: #4f2d7f;
+    margin: 0;
+  }
+  .name { flex: 1; }
+  .reps { color: #6e6e73; font-size: 15px; white-space: nowrap; }
+  li.done .name { color: #a1a1a6; text-decoration: line-through; }
+
+  .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+  }
+  .count { color: #6e6e73; font-size: 15px; }
+  .reset {
+    font: inherit;
+    font-size: 15px;
+    padding: 10px 18px;
+    border: 1px solid #d1d1d6;
+    border-radius: 10px;
+    background: #fff;
+    color: #c0392b;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tabs" id="tabs"></div>
+  <div class="variant" id="variant"></div>
+  <ul id="list"></ul>
+  <div class="foot">
+    <span class="count" id="count"></span>
+    <button class="reset" id="reset">Reset</button>
+  </div>
+</div>
+
+<script>
+const DATA = {
+  push: {
+    A: [
+      ["Cable lateral raise", "4×12–15"],
+      ["Seated DB shoulder press", "3×8–10"],
+      ["Incline DB press", "3×8–12"],
+      ["Machine chest press", "3×10–12"],
+      ["Cable crossover (high to low)", "3×12–15"],
+      ["Rope triceps pushdown", "3×12–15"],
+      ["Overhead rope triceps ext.", "3×10–12"],
+      ["Cable crunch", "3×12–15"]
+    ],
+    B: [
+      ["Cable lateral raise", "4×15–20"],
+      ["Smith incline press", "3×8–10"],
+      ["Machine shoulder press", "3×10–12"],
+      ["Pec deck fly", "3×12–15"],
+      ["Flat DB press", "3×8–12"],
+      ["DB lateral raise", "3×12–15"],
+      ["Overhead DB triceps ext.", "3×10–12"],
+      ["Hanging knee raise", "3×10–15"]
+    ]
+  },
+  pull: {
+    A: [
+      ["Wide-grip lat pulldown", "3×8–12"],
+      ["Seated cable row", "3×8–12"],
+      ["Straight-arm pulldown", "3×12–15"],
+      ["Reverse pec deck (rear delt)", "3×12–20"],
+      ["Face pull", "3×12–15"],
+      ["DB curl", "3×8–12"],
+      ["Hammer curl", "3×10–12"]
+    ],
+    B: [
+      ["Neutral-grip lat pulldown", "3×8–12"],
+      ["One-arm DB row", "3×8–12 /side"],
+      ["Straight-arm pulldown", "3×12–15"],
+      ["Reverse pec deck (rear delt)", "3×12–20"],
+      ["Incline DB curl", "3×8–12"],
+      ["Cable bar curl", "3×10–12"],
+      ["Reverse-grip curl (forearms)", "3×12–15"]
+    ]
+  },
+  legs: {
+    A: [
+      ["Bulgarian split squat (DBs)", "3×8–12 /leg"],
+      ["Leg press", "3×10–15"],
+      ["DB Romanian deadlift", "3×8–12"],
+      ["Leg extension", "3×12–15"],
+      ["Hip abduction machine", "3×15–20"],
+      ["Standing calf raise", "4×12–20"],
+      ["Stairmaster finisher", "10–15 min"]
+    ],
+    B: [
+      ["DB step-up (high box)", "3×10 /leg"],
+      ["Smith machine squat", "3×8–12"],
+      ["Smith hip thrust", "3×10–12"],
+      ["Seated leg curl", "3×10–15"],
+      ["Single-leg leg press", "3×10–12 /leg"],
+      ["Calf press (on leg press)", "4×15–20"],
+      ["Stairmaster finisher", "10–15 min"]
+    ]
+  }
+};
+
+const DAYS = [["push", "Push"], ["pull", "Pull"], ["legs", "Legs"]];
+const KEY = "workout-state-v1";
+
+let state = { day: "push", variant: "A", checks: {} };
+try {
+  const saved = JSON.parse(localStorage.getItem(KEY));
+  if (saved && DATA[saved.day]) state = Object.assign(state, saved);
+} catch (e) {}
+
+function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+
+function checksFor(day, variant) {
+  const k = day + ":" + variant;
+  const n = DATA[day][variant].length;
+  if (!Array.isArray(state.checks[k]) || state.checks[k].length !== n) {
+    state.checks[k] = new Array(n).fill(false);
+  }
+  return state.checks[k];
+}
+
+function render() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  for (const [id, label] of DAYS) {
+    const b = document.createElement("button");
+    b.textContent = label;
+    if (id === state.day) b.className = "on";
+    b.onclick = () => { state.day = id; save(); render(); };
+    tabs.appendChild(b);
+  }
+
+  const variant = document.getElementById("variant");
+  variant.innerHTML = "";
+  for (const v of ["A", "B"]) {
+    const b = document.createElement("button");
+    b.textContent = v + " day";
+    if (v === state.variant) b.className = "on";
+    b.onclick = () => { state.variant = v; save(); render(); };
+    variant.appendChild(b);
+  }
+
+  const checks = checksFor(state.day, state.variant);
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  DATA[state.day][state.variant].forEach(([name, reps], i) => {
+    const li = document.createElement("li");
+    if (checks[i]) li.className = "done";
+    const label = document.createElement("label");
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = checks[i];
+    box.onchange = () => { checks[i] = box.checked; save(); render(); };
+    const nm = document.createElement("span");
+    nm.className = "name";
+    nm.textContent = name;
+    const rp = document.createElement("span");
+    rp.className = "reps";
+    rp.textContent = reps;
+    label.append(box, nm, rp);
+    li.appendChild(label);
+    list.appendChild(li);
+  });
+
+  const done = checks.filter(Boolean).length;
+  document.getElementById("count").textContent = done + " / " + checks.length + " done";
+}
+
+document.getElementById("reset").onclick = () => {
+  state.checks[state.day + ":" + state.variant] = null;
+  checksFor(state.day, state.variant);
+  save();
+  render();
+};
+
+render();
+</script>
+</body>
+</html>
