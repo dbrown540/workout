@@ -49,12 +49,15 @@
   ul { list-style: none; margin: 0; padding: 0; }
   li { border-bottom: 1px solid #e5e5ea; }
   li:first-child { border-top: 1px solid #e5e5ea; }
+  .row { display: flex; align-items: center; }
   label {
+    flex: 1;
     display: flex;
     align-items: center;
     gap: 14px;
     min-height: 56px;
     padding: 8px 2px;
+    min-width: 0;
   }
   input[type="checkbox"] {
     width: 24px; height: 24px;
@@ -65,6 +68,41 @@
   .name { flex: 1; }
   .reps { color: #6e6e73; font-size: 15px; white-space: nowrap; }
   li.done .name { color: #a1a1a6; text-decoration: line-through; }
+
+  .edit {
+    flex: none;
+    width: 44px;
+    min-height: 56px;
+    border: none;
+    background: none;
+    font-size: 18px;
+    color: #a1a1a6;
+    padding: 0;
+  }
+  .edit.has { color: #4f2d7f; }
+  .note {
+    margin: 0 2px 12px 40px;
+    padding: 8px 12px;
+    background: #f7f5fa;
+    border-radius: 8px;
+    color: #4a4a4f;
+    font-size: 15px;
+    white-space: pre-wrap;
+  }
+  textarea {
+    display: block;
+    width: calc(100% - 4px);
+    margin: 0 2px 12px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 16px;
+    border: 1px solid #4f2d7f;
+    border-radius: 8px;
+    background: #fff;
+    color: #1c1c1e;
+    resize: none;
+    outline: none;
+  }
 
   .foot {
     display: flex;
@@ -166,11 +204,13 @@ const DATA = {
 const DAYS = [["push", "Push"], ["pull", "Pull"], ["legs", "Legs"]];
 const KEY = "workout-state-v1";
 
-let state = { day: "push", variant: "A", checks: {} };
+let state = { day: "push", variant: "A", checks: {}, notes: {} };
 try {
   const saved = JSON.parse(localStorage.getItem(KEY));
   if (saved && DATA[saved.day]) state = Object.assign(state, saved);
 } catch (e) {}
+if (!state.notes) state.notes = {};
+let editing = null;
 
 function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
 
@@ -210,6 +250,9 @@ function render() {
   DATA[state.day][state.variant].forEach(([name, reps], i) => {
     const li = document.createElement("li");
     if (checks[i]) li.className = "done";
+
+    const row = document.createElement("div");
+    row.className = "row";
     const label = document.createElement("label");
     const box = document.createElement("input");
     box.type = "checkbox";
@@ -222,7 +265,38 @@ function render() {
     rp.className = "reps";
     rp.textContent = reps;
     label.append(box, nm, rp);
-    li.appendChild(label);
+
+    const note = state.notes[name] || "";
+    const pen = document.createElement("button");
+    pen.className = "edit" + (note ? " has" : "");
+    pen.textContent = "✎";
+    pen.setAttribute("aria-label", "Note for " + name);
+    pen.onclick = () => { editing = editing === name ? null : name; render(); };
+    row.append(label, pen);
+    li.appendChild(row);
+
+    if (editing === name) {
+      const ta = document.createElement("textarea");
+      ta.rows = 2;
+      ta.value = note;
+      ta.placeholder = "Note to self…";
+      ta.oninput = () => {
+        const v = ta.value.trim();
+        if (v) state.notes[name] = ta.value;
+        else delete state.notes[name];
+        save();
+      };
+      ta.onblur = () => { editing = null; render(); };
+      li.appendChild(ta);
+      setTimeout(() => ta.focus(), 0);
+    } else if (note) {
+      const nt = document.createElement("div");
+      nt.className = "note";
+      nt.textContent = note;
+      nt.onclick = () => { editing = name; render(); };
+      li.appendChild(nt);
+    }
+
     list.appendChild(li);
   });
 
